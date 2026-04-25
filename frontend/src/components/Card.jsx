@@ -88,8 +88,16 @@ function MetricCardContent({ data }) {
 }
 
 function MapCardContent({ data }) {
+  const lat = data.lat || 43.2141;
+  const lng = data.lon || 27.9147;
+  const token = process.env.VITE_MAPBOX_TOKEN || 'MAPBOX_TOKEN';
+  const url = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lng},${lat},13,0/400x250?access_token=${token}`;
+
   return (
-    <div className="satellite-map">
+    <div 
+      className="satellite-map"
+      style={{ backgroundImage: `url(${url})`, backgroundSize: "cover", backgroundPosition: "center" }}
+    >
       <div className="satellite-overlay" />
       <div className="map-label">{data.stationLabel}</div>
 

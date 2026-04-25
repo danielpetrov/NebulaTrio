@@ -124,7 +124,7 @@ export default function App() {
           </div>
 
           <div className="right-column">
-            <Card variant="map" data={LOCATION_DATA} />
+            <Card variant="map" data={{ ...LOCATION_DATA, lat: selectedBeach.lat, lon: selectedBeach.lon, coordinates: `${selectedBeach.lat}° N, ${selectedBeach.lon}° E` }} />
 
             <div>
               <div className="section-title">Nearby Beaches</div>
