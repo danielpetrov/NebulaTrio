@@ -1,3 +1,4 @@
+// @ts-ignore
 const API_KEY = process.env.VITE_WEATHER_API_KEY || 'API_KEY';
 
 export async function getWeather(lat: number, lon: number) {
