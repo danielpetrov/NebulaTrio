@@ -1,8 +1,8 @@
 export const NEARBY_BEACHES = [
-  { id: 1, name: 'Asparuhovo Beach', distance: '2.3 km', score: 82, status: 'Excellent' },
-  { id: 2, name: 'Sea Garden Beach', distance: '4.1 km', score: 78, status: 'Good' },
-  { id: 3, name: 'Kabakum Beach',    distance: '8.7 km', score: 85, status: 'Excellent' },
-  { id: 4, name: 'Golden Sands',     distance: '18.2 km', score: 71, status: 'Good' },
+  { id: 1, name: 'Asparuhovo Beach', distance: '2.3 km', score: 82, status: 'Excellent', lat: 43.1812, lon: 27.9100 },
+  { id: 2, name: 'Sea Garden Beach', distance: '4.1 km', score: 78, status: 'Good', lat: 43.2081, lon: 27.9287 },
+  { id: 3, name: 'Kabakum Beach', distance: '8.7 km', score: 85, status: 'Excellent', lat: 43.2628, lon: 28.0267 },
+  { id: 4, name: 'Golden Sands', distance: '18.2 km', score: 71, status: 'Good', lat: 43.2846, lon: 28.0435 },
 ];
 
 export const MARINE_LIFE = [
@@ -78,6 +78,7 @@ export const METRICS_DATA = [
     idealRange: '6–8 mg/L for most marine life',
     currentAnalysis:
       'Current levels are optimal, supporting healthy marine ecosystems and biodiversity.',
+    prediction: 'stable',
   },
   {
     id: 2,
@@ -95,6 +96,7 @@ export const METRICS_DATA = [
     idealRange: 'Below 0.05 mg/L for pristine waters',
     currentAnalysis:
       'Levels are low and healthy, indicating minimal agricultural runoff and good water quality.',
+    prediction: 'decreasing',
   },
   {
     id: 3,
@@ -112,6 +114,7 @@ export const METRICS_DATA = [
     idealRange: 'Below 1.5 mg/L for coastal waters',
     currentAnalysis:
       'Slightly elevated but within acceptable range. Monitoring recommended to prevent further increases.',
+    prediction: 'stable',
   },
   {
     id: 4,
@@ -128,6 +131,7 @@ export const METRICS_DATA = [
       'Measured using glass electrode pH sensors or colorimetric methods. Continuous monitoring systems provide real-time pH data.',
     idealRange: '7.5–8.4 for seawater',
     currentAnalysis: 'pH is well-balanced and suitable for diverse marine ecosystems.',
+    prediction: 'optimal',
   },
   {
     id: 5,
@@ -144,6 +148,7 @@ export const METRICS_DATA = [
       'Thermistor or thermocouple sensors measure temperature at different depths. Satellite thermal imaging also tracks surface temperature patterns.',
     idealRange: '15–22°C for temperate marine waters',
     currentAnalysis: 'Temperature is within normal seasonal range for this region.',
+    prediction: 'warming trend',
   },
   {
     id: 6,
@@ -161,5 +166,36 @@ export const METRICS_DATA = [
     idealRange: 'Below 5 NTU for clear coastal waters',
     currentAnalysis:
       'Water is clear with minimal suspended sediment, allowing good light penetration.',
+    prediction: 'stable next hours',
+  },
+  {
+    id: 7,
+    icon: 'rainfall',
+    name: 'Rainfall',
+    value: '0',
+    unit: 'mm',
+    status: 'Normal',
+    statusClass: 'status-good',
+    prediction: 'no rain expected',
+  },
+  {
+    id: 8,
+    icon: 'waves',
+    name: 'Waves',
+    value: '1.2',
+    unit: 'm',
+    status: 'Moderate',
+    statusClass: 'status-moderate',
+    prediction: 'increasing ↑',
+  },
+  {
+    id: 9,
+    icon: 'currents',
+    name: 'Current',
+    value: '0.8',
+    unit: 'm/s NE',
+    status: 'Normal',
+    statusClass: 'status-good',
+    prediction: 'shifting north',
   },
 ];
