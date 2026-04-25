@@ -8,12 +8,11 @@ from datetime import datetime
 # Load env variables from parent folder
 load_dotenv(dotenv_path='../.env')
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-DB_NAME = os.getenv("DB_NAME", "nebulatrio")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/nebulatrio")
 
 try:
     client = MongoClient(MONGO_URI)
-    db = client[DB_NAME]
+    db = client.get_default_database(default="nebulatrio")
     measurements_collection = db["measurements"]
 except Exception as e:
     print(f"Error connecting to MongoDB: {e}")
