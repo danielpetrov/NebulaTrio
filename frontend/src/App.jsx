@@ -1,68 +1,126 @@
 import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import BubblesBackground from './components/BubblesBackground.jsx';
+import Card from './components/Card.jsx';
+import MetricModal from './components/MetricModal.jsx';
+import SearchBar from './components/SearchBar.jsx';
+import {
+  SCORE_DATA,
+  LOCATION_DATA,
+  INFO_DATA,
+  METRICS_DATA,
+  NEARBY_BEACHES,
+  MARINE_LIFE,
+} from './data/mockData.js';
 import './index.css';
 
-// Fix Leaflet default icon paths in React
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
-
-function App() {
-  const [data, setData] = useState([]);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export default function App() {
+  const [metrics, setMetrics] = useState(METRICS_DATA);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [selectedMetric, setSelectedMetric] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(`${API_URL}/data`);
-        if (response.ok) {
-          const result = await response.json();
-          setData(result);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    fetchData();
-  }, [API_URL]);
+    const onScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.currentTarget.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e) => {
+    e.currentTarget.style.opacity = '1';
+    setDraggedIndex(null);
+  };
+
+  const handleDragOver = (e) => e.preventDefault();
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) return;
+    const reordered = [...metrics];
+    const [dragged] = reordered.splice(draggedIndex, 1);
+    reordered.splice(dropIndex, 0, dragged);
+    setMetrics(reordered);
+  };
+
+  const filteredBeaches = NEARBY_BEACHES.filter((b) =>
+    b.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="app-container">
-      <header>
-        <h1>NebulaTrio Explorer</h1>
-        <p>Live Citizen Observations & Environmental Data</p>
-      </header>
+    <>
+      <div className="gradient-bg" />
+      <div
+        className="gradient-overlay"
+        style={{ opacity: Math.min(scrollY / 500, 0.6) }}
+      />
+      <BubblesBackground />
 
-      <div className="map-card">
-        <MapContainer center={[42.6977, 23.3219]} zoom={7} scrollWheelZoom={false}>
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {data.map((item, index) => (
-            item.location && item.location.lat && item.location.lng ? (
-              <Marker key={index} position={[item.location.lat, item.location.lng]}>
-                <Popup>
-                  <strong>{item.type}</strong><br />
-                  Value: {item.value || 'N/A'}<br />
-                  <small>{new Date(item.timestamp).toLocaleString()}</small>
-                </Popup>
-              </Marker>
-            ) : null
-          ))}
-        </MapContainer>
+      <div className="aware-container">
+        <header className="aware-header">
+          <div className="logo">AWARE</div>
+          <div className="location">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            {LOCATION_DATA.name}
+          </div>
+        </header>
+
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+
+        <Card variant="score" data={SCORE_DATA} />
+
+        <div className="desktop-layout">
+          <div className="left-column">
+            <div className="metrics-grid">
+              {metrics.map((metric, index) => (
+                <Card
+                  key={metric.id}
+                  variant="metric"
+                  data={metric}
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onClick={() => setSelectedMetric(metric)}
+                />
+              ))}
+            </div>
+
+            <Card variant="marine" data={MARINE_LIFE} />
+          </div>
+
+          <div className="right-column">
+            <Card variant="map" data={LOCATION_DATA} />
+
+            <div>
+              <div className="section-title">Nearby Beaches</div>
+              <div className="beaches-grid">
+                {filteredBeaches.map((beach) => (
+                  <Card key={beach.id} variant="beach" data={beach} />
+                ))}
+              </div>
+            </div>
+
+            <Card variant="info" data={INFO_DATA} />
+          </div>
+        </div>
+
+        <div className="timestamp">Last updated: Today at 14:32</div>
       </div>
-    </div>
+
+      {selectedMetric && (
+        <MetricModal
+          metric={selectedMetric}
+          onClose={() => setSelectedMetric(null)}
+        />
+      )}
+    </>
   );
 }
-
-export default App;
