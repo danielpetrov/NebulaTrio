@@ -49,6 +49,7 @@ function ScoreCardContent({ data }) {
 }
 
 function MetricCardContent({ data }) {
+  const isTemperature = data.icon === 'temperature';
   return (
     <>
       <div>
@@ -58,8 +59,28 @@ function MetricCardContent({ data }) {
           </div>
           <div className="metric-name">{data.name}</div>
         </div>
-        <div className="metric-value">{data.value}</div>
-        <div className="metric-unit">{data.unit}</div>
+        {isTemperature ? (
+          <div className="metric-temp-split">
+            <div className="metric-temp-row">
+              <span className="metric-temp-label">Air</span>
+              <span className="metric-temp-value">{data.value}<span className="metric-temp-unit">{data.unit}</span></span>
+            </div>
+            <div className="metric-temp-row">
+              <span className="metric-temp-label">Water</span>
+              <span className="metric-temp-value">{data.waterTemp ?? '17.8'}<span className="metric-temp-unit">{data.unit}</span></span>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="metric-value">{data.value}</div>
+            <div className="metric-unit">{data.unit}</div>
+          </>
+        )}
+        {data.prediction && (
+          <div className="metric-prediction">
+            → {data.prediction}
+          </div>
+        )}
       </div>
       <div className={`metric-status ${data.statusClass}`}>{data.status}</div>
     </>
@@ -71,12 +92,22 @@ function MapCardContent({ data }) {
     <div className="satellite-map">
       <div className="satellite-overlay" />
       <div className="map-label">{data.stationLabel}</div>
+
+      <div className="map-satellite-badge">
+        <span className="map-satellite-icon">🛰️</span>
+        <span className="map-satellite-text">ACTIVE</span>
+        <span className="map-anomaly-badge map-anomaly--low">anomaly: low</span>
+      </div>
+
       <div className="map-marker">
         <div className="marker-pulse" />
         <div className="marker-pulse" style={{ animationDelay: '0.5s' }} />
         <div className="marker-dot" />
       </div>
-      <div className="map-coordinates">{data.coordinates}</div>
+      <div className="map-coordinates-row">
+        <div className="map-coordinates">{data.coordinates}</div>
+        <div className="map-ais">🚢 ships nearby: 1</div>
+      </div>
     </div>
   );
 }

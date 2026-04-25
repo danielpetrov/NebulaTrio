@@ -52,6 +52,33 @@ const ICONS = {
       <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
     </svg>
   ),
+  rainfall: (props) => (
+    <svg {...props}>
+      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+      <path d="M16 14v6" />
+      <path d="M8 14v6" />
+      <path d="M12 16v6" />
+    </svg>
+  ),
+  waves: (props) => (
+    <svg {...props}>
+      <path d="M2 12c2.5 0 2.5-4 5-4s2.5 4 5 4 2.5-4 5-4 2.5 4 5 4" />
+      <path d="M2 18c2.5 0 2.5-4 5-4s2.5 4 5 4 2.5-4 5-4 2.5 4 5 4" />
+    </svg>
+  ),
+  currents: (props) => (
+    <svg {...props}>
+      <path d="M12 2v20" />
+      <path d="M17 7l-5-5-5 5" />
+    </svg>
+  ),
+  ships: (props) => (
+    <svg {...props}>
+      <path d="M2 12h20M4 12l2 6h12l2-6" />
+      <path d="M8 12V6h8v6" />
+      <path d="M12 6V3" />
+    </svg>
+  ),
 };
 
 export default function MetricIcon({ type, size = 'small' }) {
