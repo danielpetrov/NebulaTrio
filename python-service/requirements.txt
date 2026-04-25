@@ -3,3 +3,5 @@ python-dotenv
 schedule
 requests
 firebase-admin
+fastapi
+uvicorn[standard]
