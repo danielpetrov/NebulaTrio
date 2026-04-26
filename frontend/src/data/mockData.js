@@ -139,7 +139,7 @@ export const METRICS_DATA = [
     name: 'Temperature',
     value: '—',
     unit: '°C',
-    status: 'Pending',
+    status: 'Updating',
     statusClass: 'status-moderate',
     fullName: 'Water Temperature',
     importance:
@@ -190,7 +190,7 @@ export const METRICS_DATA = [
     fullName: 'Wave Height',
     value: '—',
     unit: 'm',
-    status: 'Pending',
+    status: 'Updating',
     statusClass: 'status-moderate',
     prediction: 'increasing ↑',
     importance: 'Wave height determines swimming safety and sediment resuspension. High waves stir up the seabed, reduce visibility, and create dangerous currents that can sweep swimmers offshore.',

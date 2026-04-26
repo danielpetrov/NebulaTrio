@@ -95,7 +95,7 @@ function buildSentinelMetrics(sentinel) {
 }
 
 
-const BEACH_ORDER_DEFAULT = [6, 5, 8, 10, 4, 1, 7, 12];
+const BEACH_ORDER_DEFAULT = [6, 5, 8, 10, 1, 7, 12];
 const OFFSHORE_ORDER_DEFAULT = [9, 8, 12, 5, 6, 11, 10, 1];
 
 function lsGet(key, fallback) {
@@ -206,6 +206,7 @@ export default function App() {
           const updated = { ...m };
           if (buoyData?.water_temp_c != null) updated.waterTemp = buoyData.water_temp_c.toFixed(1);
           if (weatherData?.temp != null) updated.value = Math.round(weatherData.temp);
+          if (buoyData?.history?.length) updated.tempHistory = buoyData.history;
           return updated;
         }
         if (m.id === 8 && buoyData?.wave_height_m != null)
@@ -344,7 +345,24 @@ export default function App() {
           }}
         />
 
-        <Card variant="score" data={sentinelMetrics?.scoreCard ?? SCORE_DATA} />
+        <Card variant="score" data={{
+          ...(sentinelMetrics?.scoreCard ?? SCORE_DATA),
+          hook: sentinelMetrics
+            ? (activityMode === 'offshore'
+                ? (sentinelMetrics.scoreCard.value >= 75
+                    ? 'Good fishing conditions in the next 2–3 hours'
+                    : sentinelMetrics.scoreCard.value >= 50
+                      ? 'Marginal conditions — early morning recommended'
+                      : 'Poor water quality — avoid fishing today')
+                : (sentinelMetrics.scoreCard.value >= 75
+                    ? 'Best for swimming in the next 2–3 hours'
+                    : sentinelMetrics.scoreCard.value >= 50
+                      ? 'Conditions improving — check back in 2 hours'
+                      : 'Avoid water contact today'))
+            : (activityMode === 'offshore'
+                ? 'Good fishing conditions in the next 2–3 hours'
+                : 'Best for swimming in the next 2–3 hours'),
+        }} />
 
         <WeatherBar data={weatherData} marineData={marineData} activityMode={activityMode} />
 
@@ -373,7 +391,10 @@ export default function App() {
           </div>
 
           <div className="right-column">
-            <Card variant="map" data={{ ...LOCATION_DATA, lat: activeLocation.lat, lon: activeLocation.lon, coordinates: `${activeLocation.lat}° N, ${activeLocation.lon}° E`, shipCount: vesselData?.shipCount ?? null, vesselRisk: vesselData?.risk ?? null }} />
+            <Card variant="map" data={{ ...LOCATION_DATA, lat: activeLocation.lat, lon: activeLocation.lon, coordinates: `${activeLocation.lat}° N, ${activeLocation.lon}° E`, shipCount: vesselData?.shipCount ?? null, vesselRisk: vesselData?.risk ?? null, zoneLabel: activityMode === 'offshore' ? 'Offshore zone' : 'Coastal zone',
+              distanceLabel: activityMode === 'offshore' && offshoreForSelected && selectedBeach
+                ? `${calculateDistance(offshoreForSelected.lat, offshoreForSelected.lon, selectedBeach.lat, selectedBeach.lon)} km from shore`
+                : null }} />
 
             <div>
               <div className="section-title">

@@ -285,6 +285,19 @@ body {
   margin-top: 8px;
 }
 
+.score-hook {
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 212, 255, 0.9);
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 20px;
+  padding: 7px 16px;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+
 /* ── Desktop Layout ──────────────────────────────── */
 .desktop-layout {
   display: flex;
@@ -504,6 +517,38 @@ body {
   background: #4CD964;
   border-radius: 50%;
   box-shadow: 0 0 20px rgba(76, 217, 100, 0.8), 0 0 40px rgba(76, 217, 100, 0.4);
+}
+
+.map-zone-row {
+  position: absolute;
+  top: 52px;
+  left: 16px;
+  display: flex;
+  gap: 6px;
+  z-index: 1;
+}
+
+.map-zone-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.15);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 10px;
+  padding: 4px 10px;
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.map-distance-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 4px 10px;
+  backdrop-filter: blur(8px);
 }
 
 .map-coordinates-row {
@@ -1070,6 +1115,24 @@ body {
   font-size: 15px;
   line-height: 1.7;
   color: rgba(255, 255, 255, 0.9);
+}
+
+.modal-water-temp {
+  margin-top: 8px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.modal-water-temp span {
+  color: #00d4ff;
+  font-weight: 600;
+}
+
+.temp-chart-container {
+  background: rgba(0, 212, 255, 0.04);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 14px;
+  padding: 12px 8px 4px;
+  margin-top: 8px;
 }
 
 .modal-ideal-range {

@@ -88,6 +88,7 @@ function ScoreCardContent({ data }) {
           <div className="score-status">{data.status}</div>
         </div>
       </div>
+      {data.hook && <div className="score-hook">{data.hook}</div>}
     </div>
   );
 }
@@ -148,13 +149,17 @@ function MapCardContent({ data }) {
       <div className="map-satellite-badge">
         <span className="map-satellite-icon"><SatelliteIcon /></span>
         <span className="map-satellite-text">ACTIVE</span>
-        <span className="map-anomaly-badge map-anomaly--low">anomaly: low</span>
+        <span className="map-anomaly-badge map-anomaly--low">anomaly: none</span>
       </div>
 
       <div className="map-marker">
         <div className="marker-pulse" />
         <div className="marker-pulse" style={{ animationDelay: '0.5s' }} />
         <div className="marker-dot" />
+      </div>
+      <div className="map-zone-row">
+        {data.zoneLabel && <span className="map-zone-badge">{data.zoneLabel}</span>}
+        {data.distanceLabel && <span className="map-distance-badge">{data.distanceLabel}</span>}
       </div>
       <div className="map-coordinates-row">
         <div className="map-coordinates">{data.coordinates}</div>

@@ -3,6 +3,11 @@ import { useState, useEffect } from 'react';
 // @ts-ignore
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
+export interface BuoyHistoryPoint {
+  timestamp: string;
+  water_temp_c: number | null;
+}
+
 export interface BuoyData {
   water_temp_c: number | null;
   wave_height_m: number | null;
@@ -12,6 +17,7 @@ export interface BuoyData {
   wind_direction_deg: number | null;
   wave_trend: string;
   timestamp: string;
+  history: BuoyHistoryPoint[];
 }
 
 export function useBuoy(beachId: string | null, refreshKey = 0) {
