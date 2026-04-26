@@ -1,6 +1,6 @@
 {
-  "name": "AWARE – Water Quality Monitor",
-  "short_name": "AWARE",
+  "name": "AWAREA – Water Quality Monitor",
+  "short_name": "AWAREA",
   "description": "Real-time water quality monitoring for beaches and offshore locations.",
   "start_url": "/",
   "display": "standalone",

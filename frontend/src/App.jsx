@@ -232,7 +232,7 @@ export default function App() {
     if (!navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      () => {}, // silently keep Varna default on deny/error
+      () => { }, // silently keep Varna default on deny/error
       { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
     );
     return () => navigator.geolocation.clearWatch(watchId);
@@ -291,7 +291,7 @@ export default function App() {
 
       <div className="aware-container">
         <header className="aware-header">
-          <div className="logo">AWARE</div>
+          <div className="logo">AWAREA</div>
           <div className="location-group">
             <div className="location">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
