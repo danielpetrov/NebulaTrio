@@ -156,8 +156,10 @@ export default function App() {
         const id = beachList[0]._id;
         setSelectedBeachId(id);
         lsSet('selectedBeachId', id);
-        setIsOffshore(false);
-        lsSet('isOffshore', false);
+        if (!offshoreByGroup[beachList[0].group]) {
+          setIsOffshore(false);
+          lsSet('isOffshore', false);
+        }
       }
     }
   }, [beachList, selectedBeachId]);
@@ -226,17 +228,13 @@ export default function App() {
   const { data: aiData, loading: aiLoading } = useAI(activeMetrics, MARINE_LIFE, weatherData, activityMode, isDataReady);
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
-          });
-        },
-        (error) => console.warn('Geolocation warning:', error.message)
-      );
-    }
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      () => {}, // silently keep Varna default on deny/error
+      { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   useEffect(() => {
@@ -332,7 +330,15 @@ export default function App() {
 
         <SearchBar
           beaches={beachList}
-          onSelect={(id) => { setSelectedBeachId(id); lsSet('selectedBeachId', id); setIsOffshore(false); lsSet('isOffshore', false); }}
+          onSelect={(id) => {
+            const beach = beachList.find(b => b._id === id);
+            setSelectedBeachId(id);
+            lsSet('selectedBeachId', id);
+            if (!beach || !offshoreByGroup[beach.group]) {
+              setIsOffshore(false);
+              lsSet('isOffshore', false);
+            }
+          }}
         />
 
         <Card variant="score" data={sentinelMetrics?.scoreCard ?? SCORE_DATA} />
@@ -380,7 +386,14 @@ export default function App() {
                 ) : (
                   <>
                     {beachList.map((beach) => (
-                      <div key={beach._id} onClick={() => { setSelectedBeachId(beach._id); lsSet('selectedBeachId', beach._id); setIsOffshore(false); lsSet('isOffshore', false); }} style={{ cursor: 'pointer' }}>
+                      <div key={beach._id} onClick={() => {
+                        setSelectedBeachId(beach._id);
+                        lsSet('selectedBeachId', beach._id);
+                        if (!offshoreByGroup[beach.group]) {
+                          setIsOffshore(false);
+                          lsSet('isOffshore', false);
+                        }
+                      }} style={{ cursor: 'pointer' }}>
                         <Card variant="beach" data={beach} sentinelScore={sentinelAll[beach._id]?.overall_score ?? null} />
                       </div>
                     ))}
