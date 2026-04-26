@@ -235,6 +235,7 @@ export default function Card({
   onDrop,
   onClick,
   locationName,
+  isDragOver,
 }) {
   const dragProps = variant === 'metric'
     ? { draggable: true, onDragStart, onDragEnd, onDragOver, onDrop }
@@ -244,8 +245,12 @@ export default function Card({
     ? { onClick }
     : {};
 
+  const dragOverStyle = isDragOver
+    ? { outline: '2px solid rgba(0,212,255,0.7)', transform: 'scale(1.03)', transition: 'transform 0.15s, outline 0.15s' }
+    : {};
+
   return (
-    <div className={`glass-card ${VARIANT_CLASSES[variant] ?? ''}`} {...dragProps} {...clickProps}>
+    <div className={`glass-card ${VARIANT_CLASSES[variant] ?? ''}`} style={dragOverStyle} {...dragProps} {...clickProps}>
       {variant === 'score'  && <ScoreCardContent data={data} />}
       {variant === 'metric' && <MetricCardContent data={data} />}
       {variant === 'map'    && <MapCardContent data={data} />}

@@ -77,9 +77,33 @@ function buildSentinelMetrics(sentinel) {
 }
 
 
+const BEACH_ORDER_DEFAULT = [6, 5, 8, 10, 4, 1, 7, 12];
+const OFFSHORE_ORDER_DEFAULT = [9, 8, 12, 5, 6, 11, 10, 1];
+
+function lsGet(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch { return fallback; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
 export default function App() {
-  const [metrics, setMetrics] = useState(METRICS_DATA);
+  const [metrics] = useState(METRICS_DATA);
+  const [beachOrder, setBeachOrder] = useState(() => {
+    const saved = lsGet('beachOrder', null);
+    if (!Array.isArray(saved)) return BEACH_ORDER_DEFAULT;
+    const valid = saved.filter(id => BEACH_ORDER_DEFAULT.includes(id));
+    return valid.length === BEACH_ORDER_DEFAULT.length ? valid : BEACH_ORDER_DEFAULT;
+  });
+  const [offshoreOrder, setOffshoreOrder] = useState(() => {
+    const saved = lsGet('offshoreOrder', null);
+    if (!Array.isArray(saved)) return OFFSHORE_ORDER_DEFAULT;
+    const valid = saved.filter(id => OFFSHORE_ORDER_DEFAULT.includes(id));
+    return valid.length === OFFSHORE_ORDER_DEFAULT.length ? valid : OFFSHORE_ORDER_DEFAULT;
+  });
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrollY, setScrollY] = useState(0);
@@ -105,15 +129,18 @@ export default function App() {
     return map;
   }, [processedBeaches]);
 
-  const [selectedBeachId, setSelectedBeachId] = useState(null);
-  const [isOffshore, setIsOffshore] = useState(false);
+  const [selectedBeachId, setSelectedBeachId] = useState(() => lsGet('selectedBeachId', null));
+  const [isOffshore, setIsOffshore] = useState(() => lsGet('isOffshore', false));
 
   useEffect(() => {
     if (beachList.length > 0) {
       const exists = beachList.find(b => b._id === selectedBeachId);
       if (!exists) {
-        setSelectedBeachId(beachList[0]._id);
+        const id = beachList[0]._id;
+        setSelectedBeachId(id);
+        lsSet('selectedBeachId', id);
         setIsOffshore(false);
+        lsSet('isOffshore', false);
       }
     }
   }, [beachList, selectedBeachId]);
@@ -135,8 +162,6 @@ export default function App() {
 
   const activeMetrics = useMemo(() => {
     // id legend: 1=Oxygen,3=Nitrogen,4=pH,5=Temp,6=Turbidity,7=Rain,8=Waves,9=Current,10=Algae,11=Sediment,12=Wind
-    const BEACH_ORDER = [6, 5, 8, 10, 4, 1, 7, 12];
-    const OFFSHORE_ORDER = [9, 8, 12, 5, 6, 11, 10, 1];
     const BEACH_IDS = new Set([1, 4, 5, 7, 8]);
     const OFFSHORE_IDS = new Set([1, 3, 5, 8, 9]);
     const allowedIds = activityMode === 'beach' ? BEACH_IDS : OFFSHORE_IDS;
@@ -163,14 +188,14 @@ export default function App() {
         return m;
       });
 
-    const order = activityMode === 'beach' ? BEACH_ORDER : OFFSHORE_ORDER;
+    const order = activityMode === 'beach' ? beachOrder : offshoreOrder;
     const all = [
       ...base,
       ...(windCard ? [windCard] : []),
       ...[sentinelMetrics?.turbidity, sentinelMetrics?.algae, sentinelMetrics?.particles].filter(Boolean),
     ];
     return order.map(id => all.find(m => m.id === id)).filter(Boolean);
-  }, [metrics, activityMode, buoyData, weatherData, sentinelMetrics]);
+  }, [metrics, activityMode, buoyData, weatherData, sentinelMetrics, beachOrder, offshoreOrder]);
 
   const isDataReady = !beachesLoading && !sentinelLoading && !buoyLoading && weatherData?.forecast !== 'Loading...';
   const marineData = useMarine(activeMetrics, weatherData, activityMode, isDataReady);
@@ -200,23 +225,35 @@ export default function App() {
 
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
-    e.currentTarget.style.opacity = '0.5';
+    e.currentTarget.style.opacity = '0.4';
   };
 
   const handleDragEnd = (e) => {
     e.currentTarget.style.opacity = '1';
     setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
-  const handleDragOver = (e) => e.preventDefault();
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
 
   const handleDrop = (e, dropIndex) => {
     e.preventDefault();
+    setDragOverIndex(null);
     if (draggedIndex === null || draggedIndex === dropIndex) return;
-    const reordered = [...metrics];
-    const [dragged] = reordered.splice(draggedIndex, 1);
-    reordered.splice(dropIndex, 0, dragged);
-    setMetrics(reordered);
+    const ids = activeMetrics.map(m => m.id);
+    const [dragged] = ids.splice(draggedIndex, 1);
+    ids.splice(dropIndex, 0, dragged);
+    if (activityMode === 'beach') {
+      setBeachOrder(ids);
+      lsSet('beachOrder', ids);
+    } else {
+      setOffshoreOrder(ids);
+      lsSet('offshoreOrder', ids);
+    }
+    setDraggedIndex(null);
   };
 
   const filteredBeaches = beachList.filter((b) =>
@@ -248,13 +285,13 @@ export default function App() {
               <div className="mode-toggle">
                 <button
                   className={`mode-btn ${!isOffshore ? 'active' : ''}`}
-                  onClick={() => setIsOffshore(false)}
+                  onClick={() => { setIsOffshore(false); lsSet('isOffshore', false); }}
                 >
                   🏖️ Beach
                 </button>
                 <button
                   className={`mode-btn ${isOffshore ? 'active' : ''}`}
-                  onClick={() => setIsOffshore(true)}
+                  onClick={() => { setIsOffshore(true); lsSet('isOffshore', true); }}
                 >
                   🎣 Offshore
                 </button>
@@ -281,9 +318,10 @@ export default function App() {
                     data={metric}
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragEnd={handleDragEnd}
-                    onDragOver={handleDragOver}
+                    onDragOver={(e) => handleDragOver(e, index)}
                     onDrop={(e) => handleDrop(e, index)}
                     onClick={() => setSelectedMetric(metric)}
+                    isDragOver={dragOverIndex === index && draggedIndex !== index}
                   />
                 ))
               }
@@ -312,7 +350,7 @@ export default function App() {
                       <div style={{ color: '#aaa', gridColumn: '1 / -1' }}>No beaches found.</div>
                     )}
                     {filteredBeaches.map((beach) => (
-                      <div key={beach._id} onClick={() => { setSelectedBeachId(beach._id); setIsOffshore(false); }} style={{ cursor: 'pointer' }}>
+                      <div key={beach._id} onClick={() => { setSelectedBeachId(beach._id); lsSet('selectedBeachId', beach._id); setIsOffshore(false); lsSet('isOffshore', false); }} style={{ cursor: 'pointer' }}>
                         <Card variant="beach" data={beach} sentinelScore={sentinelAll[beach._id]?.overall_score ?? null} />
                       </div>
                     ))}
