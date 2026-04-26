@@ -46,27 +46,44 @@ function buildSentinelMetrics(sentinel) {
     risk,
     turbidity: tur ? {
       id: 6, icon: 'turbidity', name: 'Turbidity',
+      fullName: 'Water Turbidity',
       value: tur.current_value?.toFixed(2) ?? '—',
       unit: 'NTU',
       status: SCORE_LABEL[tur.score] ?? 'Unknown',
       statusClass: SCORE_CLASS[tur.score] ?? 'status-good',
       prediction: tur.score === 'green' ? 'stable' : 'elevated',
+      importance: 'Turbidity measures water clarity. High turbidity blocks sunlight needed for photosynthesis, smothers benthic habitats, and can indicate runoff pollution or algal bloom onset.',
+      measurement: 'Derived from Sentinel-2 satellite red-band reflectance ratios and validated against in-situ nephelometric measurements. Values are expressed in Nephelometric Turbidity Units (NTU).',
+      idealRange: '< 2 NTU excellent; 2–5 NTU good; 5–10 NTU moderate; > 10 NTU poor visibility',
+      currentAnalysis: tur.score === 'green'
+        ? 'Water is clear with minimal suspended particles. Light penetration is excellent, supporting healthy photosynthesis and good visibility for swimmers.'
+        : 'Elevated turbidity detected, likely from recent wave activity, runoff, or sediment resuspension. Conditions are being monitored.',
     } : null,
     algae: chl ? {
       id: 10, icon: 'phosphorus', name: 'Algae Risk',
+      fullName: 'Chlorophyll-a (Algae Risk)',
       value: chl.current_value?.toFixed(2) ?? '—',
       unit: 'mg/m³',
       status: SCORE_LABEL[chl.score] ?? 'Unknown',
       statusClass: SCORE_CLASS[chl.score] ?? 'status-good',
       prediction: chl.score === 'green' ? 'normal bloom' : 'bloom risk',
+      importance: 'Chlorophyll-a is a direct indicator of phytoplankton biomass. Elevated concentrations signal algal blooms that deplete oxygen, produce toxins, and can make swimming dangerous.',
+      measurement: 'Derived from Sentinel-2 satellite multispectral imagery using band ratios (B4/B3/B2). Values are calibrated against in-situ water samples for accuracy.',
+      idealRange: '< 2 mg/m³ normal; 2–10 mg/m³ elevated; > 10 mg/m³ bloom alert',
+      currentAnalysis: chl.score === 'green' ? 'Phytoplankton levels are within normal range. No bloom risk detected.' : 'Elevated chlorophyll detected. Monitor for potential bloom development and avoid water contact if values rise further.',
     } : null,
     particles: spm ? {
       id: 11, icon: 'turbidity', name: 'Sediment',
+      fullName: 'Suspended Particulate Matter',
       value: spm.current_value?.toFixed(2) ?? '—',
       unit: 'g/m³',
       status: SCORE_LABEL[spm.score] ?? 'Unknown',
       statusClass: SCORE_CLASS[spm.score] ?? 'status-good',
       prediction: 'water clarity',
+      importance: 'Suspended sediment reduces light penetration, smothers seagrass and benthic organisms, and carries adsorbed pollutants. High SPM often follows storms, dredging, or coastal erosion.',
+      measurement: 'Quantified from Sentinel-2 satellite using the red-edge and NIR bands. Correlates with in-situ gravimetric filter measurements for calibration.',
+      idealRange: '< 5 g/m³ clear; 5–25 g/m³ moderate; > 25 g/m³ turbid',
+      currentAnalysis: spm.score === 'green' ? 'Sediment load is low. Light penetration is good and benthic habitats are unaffected.' : 'Elevated suspended sediment detected, likely from recent wave activity or runoff. Conditions should clear within 24–48 hours.',
     } : null,
     scoreCard: {
       value: scoreToValue(sentinel.overall_score),
@@ -85,7 +102,7 @@ function lsGet(key, fallback) {
   catch { return fallback; }
 }
 function lsSet(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch { }
 }
 
 export default function App() {
@@ -102,10 +119,10 @@ export default function App() {
     const valid = saved.filter(id => OFFSHORE_ORDER_DEFAULT.includes(id));
     return valid.length === OFFSHORE_ORDER_DEFAULT.length ? valid : OFFSHORE_ORDER_DEFAULT;
   });
+  const [refreshKey, setRefreshKey] = useState(0);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [selectedMetric, setSelectedMetric] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [scrollY, setScrollY] = useState(0);
 
   const [userLocation, setUserLocation] = useState({ lat: 43.2141, lon: 27.9147 });
@@ -156,9 +173,9 @@ export default function App() {
   const vesselOffshore = offshoreForSelected ? { lat: offshoreForSelected.lat, lng: offshoreForSelected.lon } : null;
   const { data: vesselData } = useVessels(vesselShore, vesselOffshore);
 
-  const { map: sentinelAll, loading: sentinelLoading } = useSentinelAll();
+  const { map: sentinelAll, loading: sentinelLoading } = useSentinelAll(refreshKey);
   const sentinelMetrics = buildSentinelMetrics(sentinelAll[selectedBeach?._id] ?? null);
-  const { data: buoyData, loading: buoyLoading } = useBuoy(selectedBeach?._id ?? null);
+  const { data: buoyData, loading: buoyLoading } = useBuoy(selectedBeach?._id ?? null, refreshKey);
 
   const activeMetrics = useMemo(() => {
     // id legend: 1=Oxygen,3=Nitrogen,4=pH,5=Temp,6=Turbidity,7=Rain,8=Waves,9=Current,10=Algae,11=Sediment,12=Wind
@@ -168,10 +185,15 @@ export default function App() {
 
     const windCard = buoyData?.wind_speed_ms != null ? {
       id: 12, icon: 'currents', name: 'Wind',
+      fullName: 'Wind Speed & Direction',
       value: buoyData.wind_speed_ms.toFixed(1),
       unit: `m/s ${degToCompass(buoyData.wind_direction_deg)}`,
       status: 'Live', statusClass: 'status-good',
       prediction: `${buoyData.wind_direction_deg?.toFixed(0) ?? '—'}°`,
+      importance: 'Wind drives surface currents, wave generation, and the transport of sea spray and pollutants. Offshore winds push surface water away from shore, affecting swimming conditions and fish aggregation zones.',
+      measurement: 'Measured by anemometer sensors mounted on the coastal buoy at 10 m height. Speed is reported in m/s and direction in degrees from true north.',
+      idealRange: '< 5 m/s calm; 5–10 m/s breezy; > 10 m/s strong — caution for water activities',
+      currentAnalysis: buoyData.wind_speed_ms < 5 ? 'Wind is calm. Excellent conditions for water activities with minimal wave generation.' : buoyData.wind_speed_ms < 10 ? 'Moderate breeze. Some wave action expected. Exercise caution for small watercraft.' : 'Strong wind conditions. Water activities not recommended. High wave and drift risk.',
     } : null;
 
     const base = metrics
@@ -256,9 +278,6 @@ export default function App() {
     setDraggedIndex(null);
   };
 
-  const filteredBeaches = beachList.filter((b) =>
-    b.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <>
@@ -285,22 +304,36 @@ export default function App() {
               <div className="mode-toggle">
                 <button
                   className={`mode-btn ${!isOffshore ? 'active' : ''}`}
-                  onClick={() => { setIsOffshore(false); lsSet('isOffshore', false); }}
+                  onClick={() => { setIsOffshore(false); lsSet('isOffshore', false); setRefreshKey(k => k + 1); }}
                 >
-                  🏖️ Beach
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 12 A9 9 0 0 1 21 12" />
+                    <line x1="12" y1="12" x2="12" y2="19" />
+                    <line x1="9" y1="19" x2="15" y2="19" />
+                    <path d="M2 20 c2.5-2 5 2 7.5 0 s5-2 7.5 0 s5 2 7.5 0" />
+                  </svg>
+                  Beach
                 </button>
                 <button
                   className={`mode-btn ${isOffshore ? 'active' : ''}`}
-                  onClick={() => { setIsOffshore(true); lsSet('isOffshore', true); }}
+                  onClick={() => { setIsOffshore(true); lsSet('isOffshore', true); setRefreshKey(k => k + 1); }}
                 >
-                  🎣 Offshore
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="5" r="3" />
+                    <line x1="12" y1="22" x2="12" y2="8" />
+                    <path d="M5 12H2a10 10 0 0 0 20 0h-3" />
+                  </svg>
+                  Offshore
                 </button>
               </div>
             )}
           </div>
         </header>
 
-        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+        <SearchBar
+          beaches={beachList}
+          onSelect={(id) => { setSelectedBeachId(id); lsSet('selectedBeachId', id); setIsOffshore(false); lsSet('isOffshore', false); }}
+        />
 
         <Card variant="score" data={sentinelMetrics?.scoreCard ?? SCORE_DATA} />
 
@@ -346,10 +379,7 @@ export default function App() {
                   ))
                 ) : (
                   <>
-                    {!beachesError && filteredBeaches.length === 0 && (
-                      <div style={{ color: '#aaa', gridColumn: '1 / -1' }}>No beaches found.</div>
-                    )}
-                    {filteredBeaches.map((beach) => (
+                    {beachList.map((beach) => (
                       <div key={beach._id} onClick={() => { setSelectedBeachId(beach._id); lsSet('selectedBeachId', beach._id); setIsOffshore(false); lsSet('isOffshore', false); }} style={{ cursor: 'pointer' }}>
                         <Card variant="beach" data={beach} sentinelScore={sentinelAll[beach._id]?.overall_score ?? null} />
                       </div>
@@ -363,23 +393,48 @@ export default function App() {
           </div>
         </div>
 
-        <div style={{ marginTop: '12px' }}>
-          <Card
-            variant="info"
-            data={{
-              title: activityMode === 'offshore' ? 'Water Quality' : 'Swimming Conditions & Quality',
-              text: aiLoading ? 'Analyzing data with AI...' : (aiData?.waterQualitySummary || INFO_DATA.text)
-            }}
-          />
+        <div style={{ marginTop: '24px' }}>
+          {aiLoading ? (
+            <div className="glass-card card--info" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="info-title">
+                {activityMode === 'offshore' ? 'Water Quality' : 'Swimming Conditions & Quality'}
+                <span className="ai-badge ai-badge--pulse">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <path d="M12 1l2.09 6.26L20.5 9l-6.41 1.74L12 17l-2.09-6.26L3.5 9l6.41-1.74Z" />
+                    <path d="M19 2l.9 2.7L22.6 5.6l-2.7.9L19 9l-.9-2.7L15.4 5.6l2.7-.9Z" opacity="0.6" />
+                  </svg>
+                  Analyzing with AI...
+                </span>
+              </div>
+              <div className="skeleton-shimmer" style={{ height: '72px', borderRadius: '8px', width: '100%' }} />
+            </div>
+          ) : (
+            <Card
+              variant="info"
+              data={{
+                title: activityMode === 'offshore' ? 'Water Quality' : 'Swimming Conditions & Quality',
+                text: aiData?.waterQualitySummary || INFO_DATA.text,
+              }}
+            />
+          )}
         </div>
 
-        <div style={{ marginTop: '12px' }}>
+        <div style={{ marginTop: '24px' }}>
           {activityMode === 'offshore' && (
             marineData?.marineLifeActivity ? (
               <Card variant="marine" data={marineData.marineLifeActivity} locationName={activeLocation.name} />
             ) : (
               <div className="glass-card card--marine" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div className="info-title">Marine Life Activity</div>
+                <div className="info-title">
+                  Marine Life Activity
+                  <span className="ai-badge ai-badge--pulse">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                      <path d="M12 1l2.09 6.26L20.5 9l-6.41 1.74L12 17l-2.09-6.26L3.5 9l6.41-1.74Z" />
+                      <path d="M19 2l.9 2.7L22.6 5.6l-2.7.9L19 9l-.9-2.7L15.4 5.6l2.7-.9Z" opacity="0.6" />
+                    </svg>
+                    Analyzing with AI...
+                  </span>
+                </div>
                 <div className="skeleton-shimmer" style={{ height: '80px', borderRadius: '8px', width: '100%' }} />
                 <div className="skeleton-shimmer" style={{ height: '80px', borderRadius: '8px', width: '100%' }} />
                 <div className="skeleton-shimmer" style={{ height: '80px', borderRadius: '8px', width: '100%' }} />
