@@ -370,7 +370,7 @@ export default function App() {
           <div className="left-column">
             <div className="metrics-grid">
               {(sentinelLoading || buoyLoading)
-                ? Array.from({ length: 9 }).map((_, i) => <Card key={`sk-${i}`} variant="skeleton" />)
+                ? Array.from({ length: 8 }).map((_, i) => <Card key={`sk-${i}`} variant="skeleton" />)
                 : activeMetrics.map((metric, index) => (
                   <Card
                     key={metric.id}

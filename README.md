@@ -1,31 +1,36 @@
-# NebulaTrio
+# NebulaTrio – AWAREA
 
-**Intelligent monitoring and alert platform for water-related risks.**
+**Intelligent AI-Driven Marine & Water Quality Monitoring Dashboard.**
 
 ---
 
 ## 📌 Overview
-Water anomalies such as floods, pipeline leaks, and excessive pollution are rising threats to communities. **NebulaTrio** addresses this by blending crowdsourced citizen reports with external sensor and satellite data. By leveraging AI-driven risk prioritization, we distill raw signals into actionable, real-time alerts. It's a proactive community-driven approach that not only protects neighborhoods but also rewards continuous civic participation.
+**NebulaTrio (AWAREA)** is a state-of-the-art monitoring platform that transforms raw environmental telemetry into intelligent, actionable insights. By blending real-time buoy data, Sentinel-2 satellite imagery, and localized weather forecasts, the system uses **Google Gemini (Vertex AI)** to generate live summaries of water quality and predict marine life activity. Whether you are a swimmer looking for safe beach conditions or a professional fisherman heading offshore, AWAREA provides the context you need to act safely.
 
-## ✨ Features
-- **Citizen Reporting:** Easily report water leaks, localized flooding, or contamination events with pinpoint geolocation.
-- **Real-Time Alerts:** Live subscriptions to high-priority anomalies ensure locals and authorities act instantly.
-- **Risk Prioritization:** Simple AI logic assesses the severity of incoming reports contextually against existing environmental metadata.
-- **Interactive Map Visualization:** A clean, glassmorphic UI displaying a heat/marker map of active incidents.
-- **Incentive System:** Earn points and actionable partner vouchers for verified crowdsourced observations.
+## ✨ Key Features
+- **AI-Powered Insights:** Leveraging Gemini 2.5 Flash to generate context-aware summaries of water conditions and biological activity.
+- **Marine Life Activity:** Predictive analysis of fish behavior (e.g., European Sprat, Turbot) based on deep-research data, current temperatures, and wave patterns.
+- **Satellite Integration:** Real-time processing of Sentinel-2 data to derive Turbidity, Algae Risk (Chlorophyll-a), and Suspended Particulate Matter.
+- **Buoy Telemetry:** Live streaming of significant wave height, surface currents, water temperature, and wind metrics.
+- **Dynamic Glassmorphic UI:** A premium, interactive dashboard featuring:
+  - **Offshore & Beach Modes:** Specialized views for different aquatic activities.
+  - **Draggable Metrics:** Customizable layout allowing users to prioritize the data they care about.
+  - **Ocean Background:** High-performance Three.js water simulation with animated foam particles and drift.
+  - **AI Badges:** Visual indicators for real-time AI processing states and confidence.
 
 ## 🏗 Architecture
-Our system decouples visual data interaction, stateless API logic, and active ingestion:
-1. **Frontend (Vite/React):** Delivers a fast, interactive Leaflet map experience to end users.
-2. **Backend (Node.js/Express):** Serves JSON endpoints, securely writes and reads from MongoDB, and is deployed entirely as serverless (`serverless-http`).
-3. **Python Service:** A standalone cron job executing in the background to repetitively fetch external mock data, normalize it, and ingest it into MongoDB/Firebase.
+The system follows a modern decoupled architecture:
+1. **Frontend (Vite/React/Three.js):** A responsive, high-performance PWA that handles complex state management, debounced AI fetching, and interactive 3D visuals.
+2. **Backend (Node.js/Express):** A robust API layer that orchestrates data from MongoDB, handles AI prompt engineering with localized "Deep Research" context, and enforces structured JSON responses.
+3. **AI Engine:** Powered by Google Vertex AI (Gemini), utilizing a RAG-style approach by injecting domain-specific markdown reports into the LLM context.
+4. **Data Ingestion:** Python-based services and Node controllers that normalize data from satellite APIs and IoT buoy networks.
 
 ## 💻 Tech Stack
-- **Frontend:** React, Vite, Leaflet, Axios/Fetch, Premium Vanilla CSS
-- **Backend:** Node.js, Express.js, Mongoose, Serverless-HTTP
-- **Background Cron:** Python 3, Schedule, PyMongo, python-dotenv
-- **Database:** MongoDB
-- **Deployment:** Netlify (Frontend & Serverless Backend) / Render (for Python Cron)
+- **Frontend:** React 18, Vite, Three.js (for Ocean Background), Framer Motion, Vanilla CSS.
+- **Backend:** Node.js, Express.js, Mongoose, Google Generative AI SDK.
+- **AI:** Google Gemini 2.5 Flash (via Vertex AI).
+- **Database:** MongoDB Atlas.
+- **Deployment:** Netlify (PWA & Edge Functions).
 
 ---
 
@@ -38,99 +43,51 @@ cd NebulaTrio
 ```
 
 ### 2. Setup Environment Variables
-Copy the template to instantiate your configuration:
+Create a `.env` file in the root directory:
 ```bash
 cp .env.example .env
 ```
-*(Fill in your MongoDB credentials and URLs. **Never** commit your local `.env`!)*
+Ensure you have a valid **VERTEX_API_KEY** for AI features.
 
-### 3. Run the Backend API
-Navigate to the backend side, install dependencies, and run locally.
+### 3. Install & Run
 ```bash
+# Setup Backend
 cd backend
 npm install
 npm run dev
-```
 
-### 4. Run the Frontend App
-Open a split terminal and fire up the Vite development server.
-```bash
+# Setup Frontend (in a new terminal)
 cd frontend
 npm install
 npm run dev
 ```
 
-### 5. Run the Python Ingestion Service
-Open a third terminal for the background script.
-```bash
-cd python-service
-pip install -r requirements.txt
-python main.py
-```
-
 ---
 
-## ⚙️ Environment Variables
-List of variables loaded seamlessly from the root `.env`:
+## ⚙️ Key Environment Variables
 ```env
-MONGO_URI=
-PORT=
-VITE_API_URL=
-API_BASE_URL=
-FIREBASE_CREDENTIALS=
-FIREBASE_PROJECT_ID=
-FIREBASE_PRIVATE_KEY=
-FIREBASE_CLIENT_EMAIL=
+MONGO_URI=           # MongoDB connection string
+VERTEX_API_KEY=      # Google Cloud Vertex API Key for Gemini
+VITE_API_URL=        # Frontend reference to backend API
+VITE_MAPBOX_TOKEN=   # For satellite map visualization
 ```
 
 ---
 
-## 🔌 API Endpoints
-All routes are exposed under `/api` implicitly.
-
-- **`GET /api/data`** — Yields current automated sensor measurements.
-  ```json
-  [
-    {
-      "location": { "lat": 42.6977, "lng": 23.3219 },
-      "value": 45.2,
-      "type": "node_sensor_data",
-      "timestamp": "2026-04-25T14:00:00.000Z"
-    }
-  ]
-  ```
-
-- **`POST /api/report`** — Creates a crowdsourced citizen observation.
-  ```json
-  {
-    "location": { "lat": 42.1354, "lng": 24.7453 },
-    "type": "flood",
-    "description": "Rising water levels near the residential bridge."
-  }
-  ```
-
-- **`GET /api/reports`** — Lists all recent community-sourced reports.
+## 🔌 Advanced API Endpoints
+- **`POST /api/ai/summary/marine`** — Generates a 3-4 sentence summary of offshore water quality.
+- **`POST /api/ai/summary/beach`** — Analyzes swimming safety and beach conditions.
+- **`POST /api/marine/activity`** — Predicts activity for 4 specific marine species using AI and local research files.
+- **`GET /api/buoy/data`** — Fetches live sensor telemetry from coastal IoT stations.
+- **`GET /api/sentinel/data`** — Retrieves processed satellite metrics (Turbidity, SPM, Chlorophyll).
 
 ---
 
-## 🎬 Demo Flow
-1. **Report Issue:** A user spots a broken municipal pipe and submits a report through the sleek React app.
-2. **Data Processed:** The Node.js Serverless API validates the payload and logs it directly in MongoDB. Concurrently, the Python cron job introduces surrounding baseline sensor data to enrich the payload.
-3. **Alert Generated:** The risk engine flags it as a priority emergency, triggering notification relays and allocating reward points to the helpful citizen.
-4. **Map View:** The event ripples to the map instantly to alert geographically proximity audiences.
-
----
-
-## 🌐 Deployment
-- **Frontend & Backends:** Ready for one-click deployment on **Netlify** using our configured `netlify.toml` which natively builds the Vite distribution and provisions `backend/server.js` seamlessly as an edge function.
-- **Python Cron:** Best suited for as an always-on Background Worker on Render, Heroku or EC2.
-
----
-
-## 🚀 Future Improvements
-- **Advanced AI Models:** Utilizing PyTorch pipelines for live computer vision (calculating flood depth / severity from images directly).
-- **Expanded Hardware Integrations:** Hooking reliably into physical ESP32 or official IoT water station networks continuously.
-- **Scaling Strategies:** Transitioning from passive loops to robust streaming pipelines (Apache Kafka) for large-scale municipal telemetry.
+## 🌊 Deep Research Integration
+The AI model isn't just guessing. It ingests a curated `deep-research-report.md` at runtime, which contains specific biological data for Black Sea species, including:
+- Optimal temperature ranges for spawning.
+- Depth preferences and feeding habits.
+- Sensitivity to turbidity and salinity changes.
 
 ## 📄 License
 MIT License
