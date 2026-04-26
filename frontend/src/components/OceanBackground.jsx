@@ -196,7 +196,11 @@ export default function OceanBackground() {
     window.addEventListener('resize', onResize);
     window.addEventListener('scroll', onScroll, { passive: true });
 
+    // Re-check dimensions after browser finishes initial layout (fixes MacBook refresh bug)
+    const initResizeId = setTimeout(onResize, 150);
+
     return () => {
+      clearTimeout(initResizeId);
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('scroll', onScroll);
