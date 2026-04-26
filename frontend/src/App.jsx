@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import BubblesBackground from './components/BubblesBackground.jsx';
+import OceanBackground from './components/OceanBackground.jsx';
 import Card from './components/Card.jsx';
 import MetricModal from './components/MetricModal.jsx';
 import SearchBar from './components/SearchBar.jsx';
@@ -84,6 +85,7 @@ export default function App() {
 
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY);
+
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -115,12 +117,13 @@ export default function App() {
 
   return (
     <>
+      <OceanBackground />
       <div className="gradient-bg" />
       <div
         className="gradient-overlay"
         style={{ opacity: Math.min(scrollY / 500, 0.6) }}
       />
-      <BubblesBackground />
+      <BubblesBackground visible={scrollY > 600} />
 
       <div className="aware-container">
         <header className="aware-header">

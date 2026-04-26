@@ -16,16 +16,17 @@ body {
 }
 
 /* ── Fixed Background ───────────────────────────── */
+/* Semi-transparent so Three.js ocean (z-index:-3) shows through */
 .gradient-bg {
   position: fixed;
   inset: 0;
   background: linear-gradient(to bottom,
-      #4A90E2 0%,
-      #3B7BC9 15%,
-      #2C66B0 30%,
-      #1D5197 50%,
-      #0E3C7E 70%,
-      #002855 100%);
+      rgba(70, 140, 225, 0.18)  0%,
+      rgba(55, 118, 205, 0.38)  22%,
+      rgba(35,  92, 168, 0.68)  38%,
+      rgba(18,  60, 130, 0.80)  58%,
+      rgba(8,   38,  95, 0.87)  78%,
+      rgba(3,   20,  60, 0.91) 100%);
   z-index: -2;
 }
 
@@ -39,42 +40,36 @@ body {
 }
 
 /* ── Bubbles ────────────────────────────────────── */
+/* Hidden by default; fade in once user scrolls past Three.js horizon */
 .bubbles-container {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+.bubbles-visible {
+  opacity: 1;
 }
 
 .bubble {
   position: absolute;
   bottom: -50px;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.05));
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), rgba(255,255,255,0.02));
   border-radius: 50%;
   opacity: 0;
   animation: rise linear infinite;
-  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 0 8px rgba(255,255,255,0.1);
 }
 
 @keyframes rise {
-  0% {
-    opacity: 0;
-    transform: translateY(0) scale(1);
-  }
-
-  10% {
-    opacity: 0.6;
-  }
-
-  90% {
-    opacity: 0.3;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(-100vh) scale(0.5);
-  }
+  0%   { opacity: 0;    transform: translateY(0) scale(1); }
+  10%  { opacity: 0.25; }
+  70%  { opacity: 0.25; }
+  100% { opacity: 0;    transform: translateY(-70vh) scale(0.5); }
 }
 
 /* ── Container ───────────────────────────────────── */
