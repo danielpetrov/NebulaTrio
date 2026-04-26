@@ -7,8 +7,8 @@ const VESSEL_API_URL = 'https://api.vesselapi.com/v1/location/vessels/radius';
 const RADIUS_M = 1500; // 2km
 
 async function fetchVessels(lat, lng) {
-  const apiKey = process.env.VITE_VESSELS_API_KEY;
-  if (!apiKey) throw new Error('VITE_VESSELS_API_KEY not configured');
+  const apiKey = process.env.VESSELS_API_KEY;
+  if (!apiKey) throw new Error('VESSELS_API_KEY not configured');
 
   const url = new URL(VESSEL_API_URL);
   url.searchParams.set('filter.latitude', lat);

@@ -67,7 +67,7 @@ function MetricCardContent({ data }) {
             </div>
             <div className="metric-temp-row">
               <span className="metric-temp-label">Water</span>
-              <span className="metric-temp-value">{data.waterTemp ?? '17.8'}<span className="metric-temp-unit">{data.unit}</span></span>
+              <span className="metric-temp-value">{data.waterTemp ?? '—'}<span className="metric-temp-unit">{data.unit}</span></span>
             </div>
           </div>
         ) : (
@@ -114,7 +114,10 @@ function MapCardContent({ data }) {
       </div>
       <div className="map-coordinates-row">
         <div className="map-coordinates">{data.coordinates}</div>
-        <div className="map-ais">🚢 ships nearby: 1</div>
+        <div className={`map-ais${data.vesselRisk === 'ship_activity' ? ' map-ais--alert' : ''}`}>
+          🚢 ships nearby: {data.shipCount ?? '—'}
+          {data.vesselRisk === 'ship_activity' && <span className="map-ais-risk"> · risk</span>}
+        </div>
       </div>
     </div>
   );
@@ -129,8 +132,14 @@ function InfoCardContent({ data }) {
   );
 }
 
-function BeachCardContent({ data }) {
-  const scoreClass = data.score >= 80 ? 'status-good' : 'status-moderate';
+const SENTINEL_LABEL = { green: 'Good', amber: 'Elevated', red: 'High Risk' };
+const SENTINEL_CLASS = { green: 'status-good', amber: 'status-moderate', red: 'status-warning' };
+const SENTINEL_SCORE = { green: 85, amber: 60, red: 35 };
+
+function BeachCardContent({ data, sentinelScore }) {
+  const score = sentinelScore ? SENTINEL_SCORE[sentinelScore] : data.score;
+  const label = sentinelScore ? SENTINEL_LABEL[sentinelScore] : data.status;
+  const cls   = sentinelScore ? SENTINEL_CLASS[sentinelScore] : (data.score >= 80 ? 'status-good' : 'status-moderate');
   return (
     <>
       <div>
@@ -139,16 +148,45 @@ function BeachCardContent({ data }) {
       </div>
       <div className="beach-score-row">
         <div>
-          <div className="beach-score">{data.score}</div>
+          <div className="beach-score">{score}</div>
           <div className="beach-score-label">Quality</div>
         </div>
-        <div className={`metric-status ${scoreClass}`}>{data.status}</div>
+        <div className={`metric-status ${cls}`}>{label}</div>
       </div>
     </>
   );
 }
 
-function MarineCardContent({ data }) {
+function SkeletonCardContent() {
+  return (
+    <>
+      <div>
+        <div className="metric-header">
+          <div className="metric-icon skeleton-shimmer" style={{ borderRadius: '8px' }} />
+          <div className="metric-name skeleton-shimmer" style={{ width: '55%' }}>&nbsp;</div>
+        </div>
+        <div className="metric-value skeleton-shimmer" style={{ width: '45%' }}>&nbsp;</div>
+        <div className="metric-unit skeleton-shimmer" style={{ marginTop: '6px', width: '60%' }}>&nbsp;</div>
+        <div className="metric-prediction skeleton-shimmer" style={{ marginTop: '6px', width: '50%' }}>&nbsp;</div>
+      </div>
+      <div className="metric-status status-good skeleton-shimmer" style={{ width: '52%' }}>&nbsp;</div>
+    </>
+  );
+}
+
+const VALID_STATUS = new Set(['status-good', 'status-moderate', 'status-warning']);
+const ACTIVITY_TO_STATUS = { high: 'status-good', moderate: 'status-moderate', low: 'status-warning', good: 'status-good', elevated: 'status-moderate', warning: 'status-warning' };
+
+function resolveActivityClass(activityClass, activity) {
+  if (VALID_STATUS.has(activityClass)) return activityClass;
+  return ACTIVITY_TO_STATUS[(activity ?? '').toLowerCase()] ?? 'status-good';
+}
+
+function MarineCardContent({ data, locationName }) {
+  const now = new Date();
+  const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const dateString = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
   return (
     <>
       <div className="info-title">Marine Life Activity</div>
@@ -158,7 +196,7 @@ function MarineCardContent({ data }) {
           <circle cx="12" cy="12" r="10" />
           <polyline points="12 6 12 12 16 14" />
         </svg>
-        Current time: 20:34 · April 25, 2026 · Varna, Bulgaria
+        Current time: {timeString} · {dateString} · {locationName || 'Unknown Location'}
       </div>
       {data.map((species) => (
         <div key={species.id} className="marine-species">
@@ -167,7 +205,7 @@ function MarineCardContent({ data }) {
               <div className="marine-species-name">{species.species}</div>
               <div className="marine-scientific-name">{species.scientificName}</div>
             </div>
-            <div className={`marine-activity ${species.activityClass}`}>{species.activity}</div>
+            <div className={`metric-status ${resolveActivityClass(species.activityClass, species.activity)}`}>{species.activity}</div>
           </div>
           <div className="marine-reason">{species.reason}</div>
           <div className="marine-seasonal">📅 {species.seasonalNote}</div>
@@ -184,16 +222,19 @@ const VARIANT_CLASSES = {
   info:   'card--info',
   beach:  'card--beach',
   marine: 'card--marine',
+  skeleton: 'card--skeleton',
 };
 
 export default function Card({
   variant,
   data,
+  sentinelScore,
   onDragStart,
   onDragEnd,
   onDragOver,
   onDrop,
   onClick,
+  locationName,
 }) {
   const dragProps = variant === 'metric'
     ? { draggable: true, onDragStart, onDragEnd, onDragOver, onDrop }
@@ -209,8 +250,9 @@ export default function Card({
       {variant === 'metric' && <MetricCardContent data={data} />}
       {variant === 'map'    && <MapCardContent data={data} />}
       {variant === 'info'   && <InfoCardContent data={data} />}
-      {variant === 'beach'  && <BeachCardContent data={data} />}
-      {variant === 'marine' && <MarineCardContent data={data} />}
+      {variant === 'beach'  && <BeachCardContent data={data} sentinelScore={sentinelScore} />}
+      {variant === 'marine' && <MarineCardContent data={data} locationName={locationName} />}
+      {variant === 'skeleton' && <SkeletonCardContent />}
     </div>
   );
 }

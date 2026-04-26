@@ -7,6 +7,10 @@ import WeatherBar from './components/WeatherBar';
 import { useWeather } from './hooks/useWeather';
 import { useMarine } from './hooks/useMarine';
 import { useBeaches } from './hooks/useBeaches';
+import { useVessels } from './hooks/useVessels';
+import { useSentinelAll } from './hooks/useSentinel';
+import { useBuoy } from './hooks/useBuoy';
+import { useAI } from './hooks/useAI';
 import { calculateDistance } from './utils/geo.js';
 import {
   SCORE_DATA,
@@ -17,6 +21,61 @@ import {
   MARINE_LIFE,
 } from './data/mockData.js';
 import './index.css';
+
+const SCORE_CLASS = { green: 'status-good', amber: 'status-moderate', red: 'status-warning' };
+const SCORE_LABEL = { green: 'Good', amber: 'Elevated', red: 'High Risk' };
+
+function scoreToValue(score) {
+  return score === 'green' ? 85 : score === 'amber' ? 60 : 35;
+}
+
+function degToCompass(deg) {
+  if (deg == null) return '';
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function buildSentinelMetrics(sentinel) {
+  if (!sentinel?.indicators) return null;
+  const { tur, chl, spm } = sentinel.indicators;
+  let risk = 0;
+  if (tur?.score === 'amber') risk += 0.3;
+  if (chl?.score !== 'green') risk += 0.2;
+
+  return {
+    risk,
+    turbidity: tur ? {
+      id: 6, icon: 'turbidity', name: 'Turbidity',
+      value: tur.current_value?.toFixed(2) ?? '—',
+      unit: 'NTU',
+      status: SCORE_LABEL[tur.score] ?? 'Unknown',
+      statusClass: SCORE_CLASS[tur.score] ?? 'status-good',
+      prediction: tur.score === 'green' ? 'stable' : 'elevated',
+    } : null,
+    algae: chl ? {
+      id: 10, icon: 'phosphorus', name: 'Algae Risk',
+      value: chl.current_value?.toFixed(2) ?? '—',
+      unit: 'mg/m³',
+      status: SCORE_LABEL[chl.score] ?? 'Unknown',
+      statusClass: SCORE_CLASS[chl.score] ?? 'status-good',
+      prediction: chl.score === 'green' ? 'normal bloom' : 'bloom risk',
+    } : null,
+    particles: spm ? {
+      id: 11, icon: 'turbidity', name: 'Sediment',
+      value: spm.current_value?.toFixed(2) ?? '—',
+      unit: 'g/m³',
+      status: SCORE_LABEL[spm.score] ?? 'Unknown',
+      statusClass: SCORE_CLASS[spm.score] ?? 'status-good',
+      prediction: 'water clarity',
+    } : null,
+    scoreCard: {
+      value: scoreToValue(sentinel.overall_score),
+      max: 100,
+      status: `${SCORE_LABEL[sentinel.overall_score] ?? 'Good'} Quality`,
+    },
+  };
+}
+
 
 export default function App() {
   const [metrics, setMetrics] = useState(METRICS_DATA);
@@ -64,9 +123,60 @@ export default function App() {
   const activeLocation = isOffshore && offshoreForSelected ? offshoreForSelected : selectedBeach;
 
   const activityMode = isOffshore && offshoreForSelected ? 'offshore' : 'beach';
-
   const weatherData = useWeather(activeLocation.lat, activeLocation.lon);
-  const marineData = useMarine();
+
+  const vesselShore = selectedBeach ? { lat: selectedBeach.lat, lng: selectedBeach.lon } : null;
+  const vesselOffshore = offshoreForSelected ? { lat: offshoreForSelected.lat, lng: offshoreForSelected.lon } : null;
+  const { data: vesselData } = useVessels(vesselShore, vesselOffshore);
+
+  const { map: sentinelAll, loading: sentinelLoading } = useSentinelAll();
+  const sentinelMetrics = buildSentinelMetrics(sentinelAll[selectedBeach?._id] ?? null);
+  const { data: buoyData, loading: buoyLoading } = useBuoy(selectedBeach?._id ?? null);
+
+  const activeMetrics = useMemo(() => {
+    // id legend: 1=Oxygen,3=Nitrogen,4=pH,5=Temp,6=Turbidity,7=Rain,8=Waves,9=Current,10=Algae,11=Sediment,12=Wind
+    const BEACH_ORDER = [6, 5, 8, 10, 4, 1, 7, 12];
+    const OFFSHORE_ORDER = [9, 8, 12, 5, 6, 11, 10, 1];
+    const BEACH_IDS = new Set([1, 4, 5, 7, 8]);
+    const OFFSHORE_IDS = new Set([1, 3, 5, 8, 9]);
+    const allowedIds = activityMode === 'beach' ? BEACH_IDS : OFFSHORE_IDS;
+
+    const windCard = buoyData?.wind_speed_ms != null ? {
+      id: 12, icon: 'currents', name: 'Wind',
+      value: buoyData.wind_speed_ms.toFixed(1),
+      unit: `m/s ${degToCompass(buoyData.wind_direction_deg)}`,
+      status: 'Live', statusClass: 'status-good',
+      prediction: `${buoyData.wind_direction_deg?.toFixed(0) ?? '—'}°`,
+    } : null;
+
+    const base = metrics
+      .filter(m => allowedIds.has(m.id))
+      .map(m => {
+        if (m.id === 5) {
+          const updated = { ...m };
+          if (buoyData?.water_temp_c != null) updated.waterTemp = buoyData.water_temp_c.toFixed(1);
+          if (weatherData?.temp != null) updated.value = Math.round(weatherData.temp);
+          return updated;
+        }
+        if (m.id === 8 && buoyData?.wave_height_m != null)
+          return { ...m, value: buoyData.wave_height_m.toFixed(2), prediction: buoyData.wave_trend, statusClass: buoyData.wave_state_beaufort <= 3 ? 'status-good' : 'status-moderate' };
+        return m;
+      });
+
+    const order = activityMode === 'beach' ? BEACH_ORDER : OFFSHORE_ORDER;
+    const all = [
+      ...base,
+      ...(windCard ? [windCard] : []),
+      ...[sentinelMetrics?.turbidity, sentinelMetrics?.algae, sentinelMetrics?.particles].filter(Boolean),
+    ];
+    return order.map(id => all.find(m => m.id === id)).filter(Boolean);
+  }, [metrics, activityMode, buoyData, weatherData, sentinelMetrics]);
+
+  const isDataReady = !beachesLoading && !sentinelLoading && !buoyLoading && weatherData?.forecast !== 'Loading...';
+  const marineData = useMarine(activeMetrics, weatherData, activityMode, isDataReady);
+
+
+  const { data: aiData, loading: aiLoading } = useAI(activeMetrics, MARINE_LIFE, weatherData, activityMode, isDataReady);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -155,56 +265,91 @@ export default function App() {
 
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
-        <Card variant="score" data={SCORE_DATA} />
+        <Card variant="score" data={sentinelMetrics?.scoreCard ?? SCORE_DATA} />
 
         <WeatherBar data={weatherData} marineData={marineData} activityMode={activityMode} />
 
         <div className="desktop-layout">
           <div className="left-column">
             <div className="metrics-grid">
-              {metrics.map((metric, index) => (
-                <Card
-                  key={metric.id}
-                  variant="metric"
-                  data={metric}
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onClick={() => setSelectedMetric(metric)}
-                />
-              ))}
+              {(sentinelLoading || buoyLoading)
+                ? Array.from({ length: 9 }).map((_, i) => <Card key={`sk-${i}`} variant="skeleton" />)
+                : activeMetrics.map((metric, index) => (
+                  <Card
+                    key={metric.id}
+                    variant="metric"
+                    data={metric}
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onClick={() => setSelectedMetric(metric)}
+                  />
+                ))
+              }
             </div>
 
-            <Card variant="marine" data={MARINE_LIFE} />
+
           </div>
 
           <div className="right-column">
-            <Card variant="map" data={{ ...LOCATION_DATA, lat: activeLocation.lat, lon: activeLocation.lon, coordinates: `${activeLocation.lat}° N, ${activeLocation.lon}° E` }} />
+            <Card variant="map" data={{ ...LOCATION_DATA, lat: activeLocation.lat, lon: activeLocation.lon, coordinates: `${activeLocation.lat}° N, ${activeLocation.lon}° E`, shipCount: vesselData?.shipCount ?? null, vesselRisk: vesselData?.risk ?? null }} />
 
             <div>
               <div className="section-title">
                 Nearby Beaches
-                {beachesLoading && <span style={{fontSize: 12, marginLeft: 10, color: '#aaa'}}>Loading...</span>}
               </div>
               <div className="beaches-grid">
                 {beachesError && <div style={{ color: 'red', gridColumn: '1 / -1' }}>Error: {beachesError}</div>}
-                {!beachesLoading && !beachesError && filteredBeaches.length === 0 && (
-                  <div style={{ color: '#aaa', gridColumn: '1 / -1' }}>No beaches found.</div>
+
+                {beachesLoading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <Card key={`skeleton-${i}`} variant="skeleton" />
+                  ))
+                ) : (
+                  <>
+                    {!beachesError && filteredBeaches.length === 0 && (
+                      <div style={{ color: '#aaa', gridColumn: '1 / -1' }}>No beaches found.</div>
+                    )}
+                    {filteredBeaches.map((beach) => (
+                      <div key={beach._id} onClick={() => { setSelectedBeachId(beach._id); setIsOffshore(false); }} style={{ cursor: 'pointer' }}>
+                        <Card variant="beach" data={beach} sentinelScore={sentinelAll[beach._id]?.overall_score ?? null} />
+                      </div>
+                    ))}
+                  </>
                 )}
-                {filteredBeaches.map((beach) => (
-                  <div key={beach._id} onClick={() => { setSelectedBeachId(beach._id); setIsOffshore(false); }} style={{ cursor: 'pointer' }}>
-                    <Card variant="beach" data={beach} />
-                  </div>
-                ))}
               </div>
             </div>
 
-            <Card variant="info" data={INFO_DATA} />
+
           </div>
         </div>
 
-        <div className="timestamp">Last updated: Today at 14:32</div>
+        <div style={{ marginTop: '12px' }}>
+          <Card
+            variant="info"
+            data={{
+              title: activityMode === 'offshore' ? 'Water Quality' : 'Swimming Conditions & Quality',
+              text: aiLoading ? 'Analyzing data with AI...' : (aiData?.waterQualitySummary || INFO_DATA.text)
+            }}
+          />
+        </div>
+
+        <div style={{ marginTop: '12px' }}>
+          {activityMode === 'offshore' && (
+            marineData?.marineLifeActivity ? (
+              <Card variant="marine" data={marineData.marineLifeActivity} locationName={activeLocation.name} />
+            ) : (
+              <div className="glass-card card--marine" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="info-title">Marine Life Activity</div>
+                <div className="skeleton-shimmer" style={{ height: '80px', borderRadius: '8px', width: '100%' }} />
+                <div className="skeleton-shimmer" style={{ height: '80px', borderRadius: '8px', width: '100%' }} />
+                <div className="skeleton-shimmer" style={{ height: '80px', borderRadius: '8px', width: '100%' }} />
+              </div>
+            )
+          )}
+        </div>
+
       </div>
 
       {selectedMetric && (
