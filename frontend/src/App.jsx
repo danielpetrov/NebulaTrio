@@ -11,6 +11,8 @@ import { useBeaches } from './hooks/useBeaches';
 import { useVessels } from './hooks/useVessels';
 import { useSentinelAll } from './hooks/useSentinel';
 import { useBuoy } from './hooks/useBuoy';
+import { useScore, useAllScores } from './hooks/useScore';
+import { useChemistry } from './hooks/useChemistry';
 import { useAI } from './hooks/useAI';
 import { calculateDistance } from './utils/geo.js';
 import {
@@ -180,11 +182,23 @@ export default function App() {
   const sentinelMetrics = buildSentinelMetrics(sentinelAll[selectedBeach?._id] ?? null);
   const { data: buoyData, loading: buoyLoading } = useBuoy(selectedBeach?._id ?? null, refreshKey);
 
+  const scoreBeachId = activityMode === 'offshore' ? (offshoreForSelected?._id ?? null) : (selectedBeach?._id ?? null);
+  const { data: scoreData } = useScore(scoreBeachId, activityMode === 'offshore' ? 'offshore' : 'bath', refreshKey);
+
+  const { data: chemistryData } = useChemistry(activeLocation?._id ?? null, refreshKey);
+
+  const beachScorePairs = useMemo(() => beachList.map(b => ({
+    beachId: b._id,
+    scoreId: activityMode === 'offshore' ? (offshoreByGroup[b.group]?._id ?? null) : b._id,
+  })), [beachList, activityMode, offshoreByGroup]);
+  const { scores: allBeachScores } = useAllScores(beachScorePairs, activityMode === 'offshore' ? 'offshore' : 'bath', refreshKey);
+
   const activeMetrics = useMemo(() => {
     // id legend: 1=Oxygen,3=Nitrogen,4=pH,5=Temp,6=Turbidity,7=Rain,8=Waves,9=Current,10=Algae,11=Sediment,12=Wind
     const BEACH_IDS = new Set([1, 4, 5, 7, 8]);
     const OFFSHORE_IDS = new Set([1, 3, 5, 8, 9]);
     const allowedIds = activityMode === 'beach' ? BEACH_IDS : OFFSHORE_IDS;
+    const chem = chemistryData?.latest;
 
     const windCard = buoyData?.wind_speed_ms != null ? {
       id: 12, icon: 'currents', name: 'Wind',
@@ -211,6 +225,17 @@ export default function App() {
         }
         if (m.id === 8 && buoyData?.wave_height_m != null)
           return { ...m, value: buoyData.wave_height_m.toFixed(2), prediction: buoyData.wave_trend, statusClass: buoyData.wave_state_beaufort <= 3 ? 'status-good' : 'status-moderate' };
+        if (m.id === 1 && typeof chem?.o2 === 'number') {
+          const o2 = chem.o2 * 32 / 1000;
+          return { ...m, value: o2.toFixed(1), statusClass: o2 >= 8 ? 'status-good' : o2 >= 5 ? 'status-moderate' : 'status-warning', status: o2 >= 8 ? 'Optimal' : o2 >= 5 ? 'Low' : 'Critical' };
+        }
+        if (m.id === 3 && typeof chem?.no3 === 'number') {
+          return { ...m, value: chem.no3.toFixed(2), unit: 'µmol/L', statusClass: chem.no3 < 5 ? 'status-good' : chem.no3 < 20 ? 'status-moderate' : 'status-warning', status: chem.no3 < 5 ? 'Low' : 'Elevated' };
+        }
+        if (m.id === 4 && typeof chem?.ph === 'number') {
+          const ph = chem.ph;
+          return { ...m, value: ph.toFixed(2), statusClass: ph >= 7.9 && ph <= 8.5 ? 'status-good' : 'status-moderate', status: ph >= 7.9 && ph <= 8.5 ? 'Balanced' : 'Monitor' };
+        }
         return m;
       });
 
@@ -221,7 +246,7 @@ export default function App() {
       ...[sentinelMetrics?.turbidity, sentinelMetrics?.algae, sentinelMetrics?.particles].filter(Boolean),
     ];
     return order.map(id => all.find(m => m.id === id)).filter(Boolean);
-  }, [metrics, activityMode, buoyData, weatherData, sentinelMetrics, beachOrder, offshoreOrder]);
+  }, [metrics, activityMode, buoyData, weatherData, sentinelMetrics, chemistryData, beachOrder, offshoreOrder]);
 
   const isDataReady = !beachesLoading && !sentinelLoading && !buoyLoading && weatherData?.forecast !== 'Loading...';
   const marineData = useMarine(activeMetrics, weatherData, activityMode, isDataReady);
@@ -345,24 +370,17 @@ export default function App() {
           }}
         />
 
-        <Card variant="score" data={{
-          ...(sentinelMetrics?.scoreCard ?? SCORE_DATA),
-          hook: sentinelMetrics
-            ? (activityMode === 'offshore'
-                ? (sentinelMetrics.scoreCard.value >= 75
-                    ? 'Good fishing conditions in the next 2–3 hours'
-                    : sentinelMetrics.scoreCard.value >= 50
-                      ? 'Marginal conditions — early morning recommended'
-                      : 'Poor water quality — avoid fishing today')
-                : (sentinelMetrics.scoreCard.value >= 75
-                    ? 'Best for swimming in the next 2–3 hours'
-                    : sentinelMetrics.scoreCard.value >= 50
-                      ? 'Conditions improving — check back in 2 hours'
-                      : 'Avoid water contact today'))
-            : (activityMode === 'offshore'
-                ? 'Good fishing conditions in the next 2–3 hours'
-                : 'Best for swimming in the next 2–3 hours'),
-        }} />
+        {(() => {
+          const liveScore = scoreData ? Math.round(scoreData.score) : null;
+          const scoreBase = scoreData
+            ? { value: liveScore, max: 100, status: scoreData.interpretation }
+            : (sentinelMetrics?.scoreCard ?? SCORE_DATA);
+          const sv = scoreBase.value;
+          const hook = activityMode === 'offshore'
+            ? (sv >= 75 ? 'Good fishing conditions in the next 2–3 hours' : sv >= 50 ? 'Marginal conditions — early morning recommended' : 'Poor water quality — avoid fishing today')
+            : (scoreData?.interpretation ?? (sv >= 75 ? 'Good bathing conditions' : sv >= 50 ? 'Conditions improving' : 'Avoid water contact today'));
+          return <Card variant="score" data={{ ...scoreBase, hook }} />;
+        })()}
 
         <WeatherBar data={weatherData} marineData={marineData} activityMode={activityMode} />
 
@@ -418,7 +436,13 @@ export default function App() {
                           lsSet('isOffshore', false);
                         }
                       }} style={{ cursor: 'pointer' }}>
-                        <Card variant="beach" data={beach} sentinelScore={sentinelAll[beach._id]?.overall_score ?? null} />
+                        <Card
+                          variant="beach"
+                          data={beach}
+                          numericScore={allBeachScores[beach._id] != null ? Math.round(allBeachScores[beach._id].score) : null}
+                          scoreFlag={allBeachScores[beach._id]?.flag ?? null}
+                          sentinelScore={allBeachScores[beach._id] ? null : (sentinelAll[beach._id]?.overall_score ?? null)}
+                        />
                       </div>
                     ))}
                   </>

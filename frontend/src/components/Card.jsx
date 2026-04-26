@@ -85,7 +85,6 @@ function ScoreCardContent({ data }) {
           <div className="score-number">
             {data.value}<span className="score-max">/{data.max}</span>
           </div>
-          <div className="score-status">{data.status}</div>
         </div>
       </div>
       {data.hook && <div className="score-hook">{data.hook}</div>}
@@ -188,10 +187,24 @@ const SENTINEL_LABEL = { green: 'Good', amber: 'Elevated', red: 'High Risk' };
 const SENTINEL_CLASS = { green: 'status-good', amber: 'status-moderate', red: 'status-warning' };
 const SENTINEL_SCORE = { green: 85, amber: 60, red: 35 };
 
-function BeachCardContent({ data, sentinelScore }) {
-  const score = sentinelScore ? SENTINEL_SCORE[sentinelScore] : data.score;
-  const label = sentinelScore ? SENTINEL_LABEL[sentinelScore] : data.status;
-  const cls   = sentinelScore ? SENTINEL_CLASS[sentinelScore] : (data.score >= 80 ? 'status-good' : 'status-moderate');
+const FLAG_CLASS = { green: 'status-good', amber: 'status-moderate', red: 'status-warning' };
+const FLAG_LABEL = { green: 'Good', amber: 'Elevated', red: 'High Risk' };
+
+function BeachCardContent({ data, sentinelScore, numericScore, scoreFlag }) {
+  let score, label, cls;
+  if (numericScore != null && scoreFlag) {
+    score = numericScore;
+    label = FLAG_LABEL[scoreFlag] ?? 'Good';
+    cls   = FLAG_CLASS[scoreFlag] ?? 'status-good';
+  } else if (sentinelScore) {
+    score = SENTINEL_SCORE[sentinelScore];
+    label = SENTINEL_LABEL[sentinelScore];
+    cls   = SENTINEL_CLASS[sentinelScore];
+  } else {
+    score = data.score;
+    label = data.status;
+    cls   = data.score >= 80 ? 'status-good' : 'status-moderate';
+  }
   return (
     <>
       <div>
@@ -284,6 +297,8 @@ export default function Card({
   variant,
   data,
   sentinelScore,
+  numericScore,
+  scoreFlag,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -310,7 +325,7 @@ export default function Card({
       {variant === 'metric' && <MetricCardContent data={data} />}
       {variant === 'map'    && <MapCardContent data={data} />}
       {variant === 'info'   && <InfoCardContent data={data} />}
-      {variant === 'beach'  && <BeachCardContent data={data} sentinelScore={sentinelScore} />}
+      {variant === 'beach'  && <BeachCardContent data={data} sentinelScore={sentinelScore} numericScore={numericScore} scoreFlag={scoreFlag} />}
       {variant === 'marine' && <MarineCardContent data={data} locationName={locationName} />}
       {variant === 'skeleton' && <SkeletonCardContent />}
     </div>

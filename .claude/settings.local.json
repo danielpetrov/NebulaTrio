@@ -136,7 +136,8 @@
       "Bash(node -e \"const {execSync}=require\\('child_process'\\); try{const s=require\\('fs'\\).statSync\\('public/favicon.png'\\); console.log\\('size:', s.size\\)}catch\\(e\\){console.log\\(e.message\\)}\")",
       "Bash(node -e \"require\\('vite-plugin-pwa'\\); console.log\\('ok'\\)\")",
       "Bash(npm info:*)",
-      "Bash(node -e \"const v=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const arr=JSON.parse\\(v\\); console.log\\(arr.slice\\(-10\\).join\\('\\\\n'\\)\\)\")"
+      "Bash(node -e \"const v=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); const arr=JSON.parse\\(v\\); console.log\\(arr.slice\\(-10\\).join\\('\\\\n'\\)\\)\")",
+      "WebFetch(domain:nebulatrio-production.up.railway.app)"
     ]
   }
 }
