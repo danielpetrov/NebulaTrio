@@ -7,6 +7,7 @@ export interface WeatherData {
   wind_dir: string;
   humidity: number;
   forecast: string;
+  temp: number | null;
 }
 
 export function useWeather(lat?: number, lon?: number): WeatherData {
@@ -16,6 +17,7 @@ export function useWeather(lat?: number, lon?: number): WeatherData {
     wind_dir: 'N',
     humidity: 0,
     forecast: 'Loading...',
+    temp: null,
   });
 
   useEffect(() => {
@@ -40,6 +42,7 @@ export function useWeather(lat?: number, lon?: number): WeatherData {
           wind_dir: dir,
           humidity: data.weather.humidity,
           forecast: isRaining ? 'Rain expected in 3h' : 'Clear skies expected',
+          temp: data.weather.temp,
         });
       } catch (error) {
         if (isMounted) {

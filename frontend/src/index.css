@@ -483,6 +483,18 @@ body {
   border-radius: 12px;
   backdrop-filter: blur(10px);
   white-space: nowrap;
+  transition: background 0.3s, color 0.3s;
+}
+
+.map-ais--alert {
+  background: rgba(255, 80, 80, 0.25);
+  color: #ff9090;
+  border: 1px solid rgba(255, 80, 80, 0.4);
+}
+
+.map-ais-risk {
+  opacity: 0.8;
+  font-style: italic;
 }
 
 /* Satellite badge */
@@ -1081,4 +1093,66 @@ body {
 .mode-btn.active {
   background: rgba(255, 255, 255, 0.15);
   color: white;
+}
+
+/* ── Skeleton loading ──────────────────────────────────────── */
+
+.card--skeleton {
+  padding: 24px 20px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.skeleton-body {
+  width: 100%;
+}
+
+.skeleton-line {
+  border-radius: 6px;
+  background: linear-gradient(110deg, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 70%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  height: 16px;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(110deg, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 70%) !important;
+  background-size: 200% 100% !important;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+  color: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+
+.skeleton-line--title {
+  height: 20px;
+}
+
+.skeleton-line--subtitle {
+  height: 14px;
+}
+
+.skeleton-stats {
+  display: flex;
+  gap: 8px;
+}
+
+.skeleton-stat {
+  flex: 1;
+  border-radius: 8px;
+  background: linear-gradient(110deg, rgba(255,255,255,0.05) 30%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.05) 70%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

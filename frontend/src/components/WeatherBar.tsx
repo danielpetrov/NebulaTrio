@@ -1,10 +1,9 @@
 import React from 'react';
 import { WeatherData } from '../hooks/useWeather';
-import { MarineData } from '../hooks/useMarine';
 
 interface WeatherBarProps {
   data: WeatherData;
-  marineData: MarineData;
+  marineData: any;
   activityMode: 'beach' | 'offshore';
 }
 
