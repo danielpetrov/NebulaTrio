@@ -183,7 +183,7 @@ export default function App() {
   const { data: buoyData, loading: buoyLoading } = useBuoy(selectedBeach?._id ?? null, refreshKey);
 
   const scoreBeachId = activityMode === 'offshore' ? (offshoreForSelected?._id ?? null) : (selectedBeach?._id ?? null);
-  const { data: scoreData } = useScore(scoreBeachId, activityMode === 'offshore' ? 'offshore' : 'bath', refreshKey);
+  const { data: scoreData, loading: scoreLoading } = useScore(scoreBeachId, activityMode === 'offshore' ? 'offshore' : 'bath', refreshKey);
 
   const { data: chemistryData } = useChemistry(activeLocation?._id ?? null, refreshKey);
 
@@ -370,17 +370,16 @@ export default function App() {
           }}
         />
 
-        {(() => {
-          const liveScore = scoreData ? Math.round(scoreData.score) : null;
-          const scoreBase = scoreData
-            ? { value: liveScore, max: 100, status: scoreData.interpretation }
-            : (sentinelMetrics?.scoreCard ?? SCORE_DATA);
-          const sv = scoreBase.value;
-          const hook = activityMode === 'offshore'
-            ? (sv >= 75 ? 'Good fishing conditions in the next 2–3 hours' : sv >= 50 ? 'Marginal conditions — early morning recommended' : 'Poor water quality — avoid fishing today')
-            : (scoreData?.interpretation ?? (sv >= 75 ? 'Good bathing conditions' : sv >= 50 ? 'Conditions improving' : 'Avoid water contact today'));
-          return <Card variant="score" data={{ ...scoreBase, hook }} />;
-        })()}
+        {scoreLoading || !scoreData
+          ? <Card variant="score-skeleton" />
+          : (() => {
+              const sv = Math.round(scoreData.score);
+              const hook = activityMode === 'offshore'
+                ? (sv >= 75 ? 'Good fishing conditions in the next 2–3 hours' : sv >= 50 ? 'Marginal conditions — early morning recommended' : 'Poor water quality — avoid fishing today')
+                : scoreData.interpretation;
+              return <Card variant="score" data={{ value: sv, max: 100, status: scoreData.interpretation, hook }} />;
+            })()
+        }
 
         <WeatherBar data={weatherData} marineData={marineData} activityMode={activityMode} />
 

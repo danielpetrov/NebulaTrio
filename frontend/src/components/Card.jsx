@@ -222,6 +222,23 @@ function BeachCardContent({ data, sentinelScore, numericScore, scoreFlag }) {
   );
 }
 
+function ScoreSkeletonContent() {
+  return (
+    <div className="score-card-inner">
+      <div className="score-label skeleton-shimmer" style={{ width: '60%', margin: '0 auto' }}>&nbsp;</div>
+      <div className="score-circle-container">
+        <svg className="score-circle-svg" viewBox="0 0 220 220">
+          <circle cx="110" cy="110" r="100" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12" />
+        </svg>
+        <div className="score-value">
+          <div className="score-number skeleton-shimmer" style={{ width: '80px', height: '64px', borderRadius: '8px' }}>&nbsp;</div>
+        </div>
+      </div>
+      <div className="score-hook skeleton-shimmer" style={{ width: '70%', margin: '14px auto 0' }}>&nbsp;</div>
+    </div>
+  );
+}
+
 function SkeletonCardContent() {
   return (
     <>
@@ -284,13 +301,14 @@ function MarineCardContent({ data, locationName }) {
 }
 
 const VARIANT_CLASSES = {
-  score:  'card--score',
-  metric: 'card--metric',
-  map:    'card--map',
-  info:   'card--info',
-  beach:  'card--beach',
-  marine: 'card--marine',
-  skeleton: 'card--skeleton',
+  score:         'card--score',
+  'score-skeleton': 'card--score',
+  metric:        'card--metric',
+  map:           'card--map',
+  info:          'card--info',
+  beach:         'card--beach',
+  marine:        'card--marine',
+  skeleton:      'card--skeleton',
 };
 
 export default function Card({
@@ -321,7 +339,8 @@ export default function Card({
 
   return (
     <div className={`glass-card ${VARIANT_CLASSES[variant] ?? ''}`} style={dragOverStyle} {...dragProps} {...clickProps}>
-      {variant === 'score'  && <ScoreCardContent data={data} />}
+      {variant === 'score'          && <ScoreCardContent data={data} />}
+      {variant === 'score-skeleton' && <ScoreSkeletonContent />}
       {variant === 'metric' && <MetricCardContent data={data} />}
       {variant === 'map'    && <MapCardContent data={data} />}
       {variant === 'info'   && <InfoCardContent data={data} />}
