@@ -1,0 +1,12 @@
+.venv/
+hr_data/
+beach_images/
+notebooks/
+__pycache__/
+*.pyc
+.env
+.git/
+*.nc
+*.nc4
+*.csv
+.ipynb_checkpoints/

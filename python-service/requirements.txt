@@ -5,3 +5,12 @@ requests
 firebase-admin
 fastapi
 uvicorn[standard]
+copernicusmarine
+xarray
+h5netcdf
+numpy
+pandas
+matplotlib
+pillow
+beautifulsoup4
+scipy
