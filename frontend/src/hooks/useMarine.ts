@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
-const API_BASE_URL = 'http://localhost:3000/api';
+// @ts-ignore
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export function useMarine(metrics: any[], weatherData: any, activityMode: 'beach' | 'offshore', isReady: boolean) {
   const [marineData, setMarineData] = useState<any>(null);
