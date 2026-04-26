@@ -1,6 +1,50 @@
 import { useState, useEffect } from 'react';
 import MetricIcon from './MetricIcons.jsx';
 
+function AiIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <path d="M12 1l2.09 6.26L20.5 9l-6.41 1.74L12 17l-2.09-6.26L3.5 9l6.41-1.74Z" />
+      <path d="M19 2l.9 2.7L22.6 5.6l-2.7.9L19 9l-.9-2.7L15.4 5.6l2.7-.9Z" opacity="0.6" />
+      <path d="M5 16l.7 2.1 2.1.7-2.1.7L5 21.5l-.7-2.1-2.1-.7 2.1-.7Z" opacity="0.5" />
+    </svg>
+  );
+}
+
+const SVG_PROPS = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+
+function SatelliteIcon() {
+  return (
+    <svg {...SVG_PROPS}>
+      <path d="m4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+    </svg>
+  );
+}
+
+function ShipIcon() {
+  return (
+    <svg {...SVG_PROPS}>
+      <path d="M2 12h20M4 12l2 6h12l2-6"/>
+      <path d="M8 12V6h8v6"/>
+      <path d="M12 6V3"/>
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg {...SVG_PROPS} width={13} height={13}>
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  );
+}
+
 const CIRCUMFERENCE = 2 * Math.PI * 100; // r=100 → 628.32
 
 function ScoreCardContent({ data }) {
@@ -102,7 +146,7 @@ function MapCardContent({ data }) {
       <div className="map-label">{data.stationLabel}</div>
 
       <div className="map-satellite-badge">
-        <span className="map-satellite-icon">🛰️</span>
+        <span className="map-satellite-icon"><SatelliteIcon /></span>
         <span className="map-satellite-text">ACTIVE</span>
         <span className="map-anomaly-badge map-anomaly--low">anomaly: low</span>
       </div>
@@ -115,7 +159,7 @@ function MapCardContent({ data }) {
       <div className="map-coordinates-row">
         <div className="map-coordinates">{data.coordinates}</div>
         <div className={`map-ais${data.vesselRisk === 'ship_activity' ? ' map-ais--alert' : ''}`}>
-          🚢 ships nearby: {data.shipCount ?? '—'}
+          <ShipIcon /> ships nearby: {data.shipCount ?? '—'}
           {data.vesselRisk === 'ship_activity' && <span className="map-ais-risk"> · risk</span>}
         </div>
       </div>
@@ -126,7 +170,10 @@ function MapCardContent({ data }) {
 function InfoCardContent({ data }) {
   return (
     <>
-      <div className="info-title">{data.title}</div>
+      <div className="info-title">
+        {data.title}
+        <span className="ai-badge"><AiIcon size={12} /> AI</span>
+      </div>
       <div className="info-text">{data.text}</div>
     </>
   );
@@ -189,7 +236,10 @@ function MarineCardContent({ data, locationName }) {
 
   return (
     <>
-      <div className="info-title">Marine Life Activity</div>
+      <div className="info-title">
+        Marine Life Activity
+        <span className="ai-badge"><AiIcon size={12} /> AI</span>
+      </div>
       <div className="current-time">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
           style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }}>
@@ -208,7 +258,7 @@ function MarineCardContent({ data, locationName }) {
             <div className={`metric-status ${resolveActivityClass(species.activityClass, species.activity)}`}>{species.activity}</div>
           </div>
           <div className="marine-reason">{species.reason}</div>
-          <div className="marine-seasonal">📅 {species.seasonalNote}</div>
+          <div className="marine-seasonal"><CalendarIcon /> {species.seasonalNote}</div>
         </div>
       ))}
     </>

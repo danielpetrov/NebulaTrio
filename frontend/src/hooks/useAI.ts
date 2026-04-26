@@ -11,6 +11,12 @@ export function useAI(metrics: any[], marineLife: any[], weatherData: any, activ
   const marineLifeStr = JSON.stringify(marineLife);
   const weatherDataStr = JSON.stringify(weatherData);
 
+  // Reset immediately when mode switches so old data doesn't linger
+  useEffect(() => {
+    setData(null);
+    setLoading(true);
+  }, [activityMode]);
+
   useEffect(() => {
     // Only fetch if data is ready and we have valid metrics
     if (!isReady || !metrics || metrics.length === 0) return;

@@ -41,8 +41,8 @@ export function useSentinel(beachId: string | null) {
   return { data, loading };
 }
 
-// Returns Map<beach_id, SentinelData> — fetched once on mount
-export function useSentinelAll() {
+// Returns Map<beach_id, SentinelData> — re-fetches when refreshKey changes
+export function useSentinelAll(refreshKey = 0) {
   const [map, setMap] = useState<Record<string, SentinelData>>({});
   const [loading, setLoading] = useState(true);
 
@@ -60,7 +60,7 @@ export function useSentinelAll() {
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [refreshKey]);
 
   return { map, loading };
 }

@@ -14,7 +14,7 @@ export interface BuoyData {
   timestamp: string;
 }
 
-export function useBuoy(beachId: string | null) {
+export function useBuoy(beachId: string | null, refreshKey = 0) {
   const [data, setData] = useState<BuoyData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +30,7 @@ export function useBuoy(beachId: string | null) {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, [beachId]);
+  }, [beachId, refreshKey]);
 
   return { data, loading };
 }
